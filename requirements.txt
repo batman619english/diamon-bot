@@ -16,7 +16,6 @@ certifi==2025.7.9
 charset-normalizer==3.4.2
 click==8.1.8
 Deprecated==1.2.18
-Flask==3.1.1
 frozenlist==1.7.0
 future==1.0.0
 gunicorn==23.0.0
