@@ -15,7 +15,7 @@ line_bot_api = LineBotApi(LINE_CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(LINE_CHANNEL_SECRET)
 
 # === Replace this with your actual user ID (print it from the bot!) ===
-owner_id = "REPLACE_WITH_YOUR_REAL_USER_ID"
+owner_id = "U4dbc4dee4747e4f8ce6fe6a03d481667"
 
 @app.route("/callback", methods=['POST'])
 def callback():
