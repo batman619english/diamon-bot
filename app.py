@@ -100,6 +100,24 @@ def handle_message(event):
             event.reply_token,
             TextSendMessage(text=f"Current time: {current_time}")
         )
+            elif text == '.help owners':
+        if user_id == owner_id:WITsayiangod
+            owner_commands = """👑 Owner Commands:
+• /mod @user - Promote someone to mod
+• /ban @user - Ban a user
+• /unban @user - Unban a user
+• /announce [text] - Send a global message
+• /purge - Clean recent messages
+• /botname [newname] - Change bot name"""
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(text=owner_commands)
+            )
+        else:
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(text="🚫 You don't have permission to view owner commands.")
+            )
 
 if __name__ == "__main__":  # Note the colon here
     port = int(os.environ.get('PORT', 5000))
