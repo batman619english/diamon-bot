@@ -101,6 +101,6 @@ def handle_message(event):
             TextSendMessage(text=f"Current time: {current_time}")
         )
 
-if __name__ == "__main__"
+if __name__ == "__main__":  # Note the colon here
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
