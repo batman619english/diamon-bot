@@ -8,27 +8,25 @@ from datetime import datetime
 app = Flask(__name__)
 
 # === Your LINE credentials ===
-LINE_CHANNEL_SECRET = '438c111da8cc1695732dd670a2003471'
-LINE_CHANNEL_ACCESS_TOKEN = '64NaOsjydBzlZKcHsshIqwmZ7eoYc/kPZh85Ywd1cpi1D2KPbNKH+3s4RWafJW+edxzQyN09G/vaSRdMlxtae+d3ENEp2eqOsq9OxlWwgMVIOjSQQcKBo3coPVg3RPSZ8Ji3rBxh3hkkmf3nj+GXlQdB04t89/1O/w1cDnyilFU='
+LINE_CHANNEL_SECRET = '438c111da8cc1695732dd670a2003471'  # Replace with your real secret
+LINE_CHANNEL_ACCESS_TOKEN = '64NaOsjydBzlZKcHsshIqwmZ7eoYc/kPZh85Ywd1cpi1D2KPbNKH+3s4RWafJW+edxzQyN09G/vaSRdMlxtae+d3ENEp2eqOsq9OxlWwgMVIOjSQQcKBo3coPVg3RPSZ8Ji3rBxh3hkkmf3nj+GXlQdB04t89/1O/w1cDnyilFU='  # Replace with your real token
 
 line_bot_api = LineBotApi(LINE_CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(LINE_CHANNEL_SECRET)
 
-# === Replace this with your actual user ID (print it from the bot!) ===
-owner_id = "U4dbc4dee4747e4f8ce6fe6a03d481667"
+# === Your LINE User ID (owner) ===
+owner_id = "U4dbc4dee4747e4f8ce6fe6a03d481667"  # Replace with your actual user ID
 
 @app.route("/callback", methods=['POST'])
 def callback():
     signature = request.headers['X-Line-Signature']
     body = request.get_data(as_text=True)
-
-    # Log body for debugging
     print("Request body:", body)
 
     try:
         handler.handle(body, signature)
     except InvalidSignatureError:
-        print("❌ Invalid signature. Check channel secret.")
+        print("Invalid signature. Check your channel secret.")
         abort(400)
 
     return 'OK'
@@ -37,7 +35,6 @@ def callback():
 def handle_message(event):
     text = event.message.text
     user_id = event.source.user_id
-
     print(f"👤 Message from user ID: {user_id} — Text: {text}")
 
     if text == "/time":
@@ -65,12 +62,10 @@ def handle_message(event):
                 event.reply_token,
                 TextSendMessage(text="🚫 You don't have permission to view owner commands.")
             )
+
     else:
-        # Default echo
-        line_bot_api.reply_message(
-            event.reply_token,
-            TextSendMessage(text=f"You said: {text}")
-        )
+        # Do not reply to any other messages
+        pass
 
 if __name__ == "__main__":
     port = int(os.environ.get('PORT', 5000))
