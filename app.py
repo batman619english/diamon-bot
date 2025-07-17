@@ -1,189 +1,132 @@
-import os
-import json
-from flask import Flask, request, abort
-from linebot import LineBotApi, WebhookHandler
-from linebot.exceptions import InvalidSignatureError
-from linebot.models import MessageEvent, TextMessage, TextSendMessage
-from datetime import datetime
+    # ---------------- Admin + Public Commands ---------------- #
+    # Re-check role here in case /mod was just used
+    is_owner = user_id == OWNER_ID or user_id == "U75fd18c523f2254bb7f1553ee39454fb"
+    is_mod = roles.get("mods", {}).get(user_id, False)
+    authorized = is_owner or is_mod
 
-app = Flask(__name__)
+    # /help - list commands
+    if text == "/help":
+        help_text = (
+            "**Admin Commands:**\n"
+            "/addban <word>\n"
+            "/removeban <word>\n"
+            "/mod @<user>\n"
+            "/ban @<user>\n"
+            "/unban @<user>\n"
+            "/announce <message>\n"
+            "/kick @<user>\n"
+            "/botname <newname>\n"
+            "/purge\n\n"
+            "**Public Commands:**\n"
+            "/time\n"
+            ".lurkmsg"
+        )
+        line_bot_api.reply_message(event.reply_token, TextSendMessage(text=help_text))
+        return
 
-# LINE credentials
-LINE_CHANNEL_SECRET = '438c111da8cc1695732dd670a2003471'
-LINE_CHANNEL_ACCESS_TOKEN = '64NaOsjydBzlZKcHsshIqwmZ7eoYc/kPZh85Ywd1cpi1D2KPbNKH+3s4RWafJW+edxzQyN09G/vaSRdMlxtae+d3ENEp2eqOsq9OxlWwgMVIOjSQQcKBo3coPVg3RPSZ8Ji3rBxh3hkkmf3nj+GXlQdB04t89/1O/w1cDnyilFU='
-
-line_bot_api = LineBotApi(LINE_CHANNEL_ACCESS_TOKEN)
-handler = WebhookHandler(LINE_CHANNEL_SECRET)
-
-# Owner ID
-owner_id = "U4dbc4dee4747e4f8ce6fe6a03d481667"
-
-# JSON files for persistent memory
-ROLES_FILE = "user_roles.json"
-ACTIVITY_FILE = "activity.json"
-NAMES_FILE = "user_names.json"
-
-def load_json(filename, default={}):
-    if not os.path.exists(filename):
-        return default
-    with open(filename, "r") as f:
-        return json.load(f)
-
-def save_json(filename, data):
-    with open(filename, "w") as f:
-        json.dump(data, f, indent=2)
-
-@app.route("/callback", methods=['POST'])
-def callback():
-    signature = request.headers['X-Line-Signature']
-    body = request.get_data(as_text=True)
-    print("Request body:", body)
-
-    try:
-        handler.handle(body, signature)
-    except InvalidSignatureError:
-        print("❌ Invalid signature.")
-        abort(400)
-    return 'OK'
-
-@handler.add(MessageEvent, message=TextMessage)
-def handle_message(event):
-    text = event.message.text.strip()
-    user_id = event.source.user_id
-    print(f"👤 Message from user ID: {user_id} — Text: {text}")
-
-    roles = load_json(ROLES_FILE, {"mods": [], "banned": []})
-    activity = load_json(ACTIVITY_FILE, {})
-    names = load_json(NAMES_FILE, {})
-
-    # Save user's display name
-    profile = line_bot_api.get_profile(user_id)
-    display_name = profile.display_name
-    names[user_id] = display_name
-    save_json(NAMES_FILE, names)
-
-    # Update activity
-    activity[user_id] = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
-    save_json(ACTIVITY_FILE, activity)
-
-    # Check role
-    is_owner = user_id == owner_id
-    is_mod = user_id in roles.get("mods", [])
-
-    if not (is_owner or is_mod):
-        return  # Only owner/mods can use commands
-
-    # === Commands ===
+    # /time - UTC time
     if text == "/time":
-        current_time = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')
-        line_bot_api.reply_message(
-            event.reply_token,
-            TextSendMessage(text=f"Current time: {current_time}")
-        )
+        utc_time = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
+        line_bot_api.reply_message(event.reply_token, TextSendMessage(text=f"🕒 Current UTC time:\n{utc_time}"))
+        return
 
-    elif text == ".help owners":
-        owner_commands = """👑 Owner Commands:
-• /mod @user - Promote someone to mod
-• /ban @user - Ban a user
-• /unban @user - Unban a user
-• /announce [text] - Send a global message
-• /purge - Clean recent messages
-• /botname [newname] - Change bot name
-• .lurkmsg - Show active vs inactive users"""
-        line_bot_api.reply_message(
-            event.reply_token,
-            TextSendMessage(text=owner_commands)
-        )
-
-    elif text.startswith("/mod @"):
-        target = text.replace("/mod @", "").strip()
-        if target not in roles["mods"]:
-            roles["mods"].append(target)
-            save_json(ROLES_FILE, roles)
-            line_bot_api.reply_message(
-                event.reply_token,
-                TextSendMessage(text=f"✅ @{target} is now a mod.")
-            )
+    # /botname <newname> - simulated
+    if text.startswith("/botname"):
+        parts = text.split(maxsplit=1)
+        if len(parts) == 2:
+            bot_name = parts[1]
+            line_bot_api.reply_message(event.reply_token, TextSendMessage(text=f"🤖 My new name is now: {bot_name} (simulated)"))
         else:
-            line_bot_api.reply_message(
-                event.reply_token,
-                TextSendMessage(text=f"ℹ️ @{target} is already a mod.")
-            )
+            line_bot_api.reply_message(event.reply_token, TextSendMessage(text="Usage: /botname NewBotName"))
+        return
 
-    elif text.startswith("/ban @"):
-        target = text.replace("/ban @", "").strip()
-        if target not in roles["banned"]:
-            roles["banned"].append(target)
-            save_json(ROLES_FILE, roles)
-            line_bot_api.reply_message(
-                event.reply_token,
-                TextSendMessage(text=f"🚫 @{target} has been banned.")
-            )
-        else:
-            line_bot_api.reply_message(
-                event.reply_token,
-                TextSendMessage(text=f"ℹ️ @{target} is already banned.")
-            )
+    # /purge - simulated
+    if text == "/purge":
+        line_bot_api.reply_message(event.reply_token, TextSendMessage(text="🧹 Purging recent messages... (simulated)"))
+        return
 
-    elif text.startswith("/unban @"):
-        target = text.replace("/unban @", "").strip()
-        if target in roles["banned"]:
-            roles["banned"].remove(target)
-            save_json(ROLES_FILE, roles)
-            line_bot_api.reply_message(
-                event.reply_token,
-                TextSendMessage(text=f"♻️ @{target} has been unbanned.")
-            )
-        else:
-            line_bot_api.reply_message(
-                event.reply_token,
-                TextSendMessage(text=f"ℹ️ @{target} is not in the banned list.")
-            )
+    if not authorized:
+        return  # Don't process admin commands for regular users
 
-    elif text.startswith("/announce "):
-        message = text.replace("/announce ", "")
-        line_bot_api.reply_message(
-            event.reply_token,
-            TextSendMessage(text=f"📢 Announcement: {message}")
-        )
-
-    elif text.startswith("/purge"):
-        line_bot_api.reply_message(
-            event.reply_token,
-            TextSendMessage(text="🧹 Purge complete (simulated).")
-        )
-
-    elif text.startswith("/botname "):
-        new_name = text.replace("/botname ", "").strip()
-        line_bot_api.reply_message(
-            event.reply_token,
-            TextSendMessage(text=f"🤖 Bot name changed to: {new_name} (simulated)")
-        )
-
-    elif text == ".lurkmsg":
-        known_ids = [owner_id] + [uid for uid in names if uid in roles.get("mods", [])]
-        active = []
-        inactive = []
-
-        for uid in known_ids:
-            name = names.get(uid, uid)
-            if uid in activity:
-                active.append(name)
+    # /addban <word>
+    if text.startswith("/addban"):
+        parts = text.split(maxsplit=1)
+        if len(parts) == 2:
+            word = parts[1].strip().lower()
+            if word not in banned_words:
+                banned_words.append(word)
+                save_json(BANNED_WORDS_FILE, banned_words)
+                msg = f"✅ Added banned word: {word}"
             else:
-                inactive.append(name)
+                msg = f"⚠️ Word already in ban list: {word}"
+        else:
+            msg = "Usage: /addban <word>"
+        line_bot_api.reply_message(event.reply_token, TextSendMessage(text=msg))
+        return
 
-        response = "📊 Lurk Report:\n"
-        response += "\n✅ Active:\n" + "\n".join(active) if active else "\n✅ Active:\nNone"
-        response += "\n\n❌ Inactive:\n" + "\n".join(inactive) if inactive else "\n\n❌ Inactive:\nNone"
+    # /removeban <word>
+    if text.startswith("/removeban"):
+        parts = text.split(maxsplit=1)
+        if len(parts) == 2:
+            word = parts[1].strip().lower()
+            if word in banned_words:
+                banned_words.remove(word)
+                save_json(BANNED_WORDS_FILE, banned_words)
+                msg = f"✅ Removed banned word: {word}"
+            else:
+                msg = f"⚠️ Word not found: {word}"
+        else:
+            msg = "Usage: /removeban <word>"
+        line_bot_api.reply_message(event.reply_token, TextSendMessage(text=msg))
+        return
 
-        line_bot_api.reply_message(
-            event.reply_token,
-            TextSendMessage(text=response)
-        )
+    # /mod @user
+    if text.startswith("/mod"):
+        parts = text.split()
+        if len(parts) >= 2:
+            target_id = mention_to_user_id(parts[1], names, event)
+            if target_id:
+                roles.setdefault("mods", {})[target_id] = True
+                save_json(ROLES_FILE, roles)
+                line_bot_api.reply_message(event.reply_token, TextSendMessage(text=f"🛡️ User promoted to moderator."))
+        else:
+            line_bot_api.reply_message(event.reply_token, TextSendMessage(text="Usage: /mod @username"))
+        return
 
-    else:
-        pass  # Do nothing for unknown input
+    # /ban @user
+    if text.startswith("/ban"):
+        parts = text.split()
+        if len(parts) >= 2:
+            target_id = mention_to_user_id(parts[1], names, event)
+            if target_id:
+                roles.setdefault("banned", {})[target_id] = True
+                save_json(ROLES_FILE, roles)
+                if group_id:
+                    kick_user_from_group(group_id, target_id, event)
+        else:
+            line_bot_api.reply_message(event.reply_token, TextSendMessage(text="Usage: /ban @username"))
+        return
 
-if __name__ == "__main__":
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
+    # /unban @user
+    if text.startswith("/unban"):
+        parts = text.split()
+        if len(parts) >= 2:
+            target_id = mention_to_user_id(parts[1], names, event)
+            if target_id and target_id in roles.get("banned", {}):
+                del roles["banned"][target_id]
+                save_json(ROLES_FILE, roles)
+                line_bot_api.reply_message(event.reply_token, TextSendMessage(text="✅ User has been unbanned."))
+        else:
+            line_bot_api.reply_message(event.reply_token, TextSendMessage(text="Usage: /unban @username"))
+        return
+
+    # /announce <message>
+    if text.startswith("/announce"):
+        parts = text.split(maxsplit=1)
+        if len(parts) == 2:
+            msg = parts[1]
+            if group_id:
+                line_bot_api.push_message(group_id, TextSendMessage(text=f"📢 Announcement:\n{msg}"))
+        else:
+            line_bot_api.reply_message(event.reply_token, TextSendMessage(text="Usage: /announce <message>"))
+        return
