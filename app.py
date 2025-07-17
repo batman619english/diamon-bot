@@ -6,7 +6,7 @@ from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
 from linebot.models import (
     MessageEvent, TextMessage, TextSendMessage,
-    SourceGroup, Mention, Mentionee
+    SourceGroup, Mentionee
 )
 
 # === Replace these with your real token/secret ===
