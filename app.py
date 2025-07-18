@@ -13,7 +13,7 @@ LINE_CHANNEL_SECRET = '438c111da8cc1695732dd670a2003471'
 line_bot_api = LineBotApi(LINE_CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(LINE_CHANNEL_SECRET)
 
-OWNER_ID = 'replace_with_your_owner_id_after_you_see_it'  # placeholder for now
+OWNER_ID = "U75fd18c523f2254bb7f1553ee39454fb"  # placeholder for now
 
 @app.route("/callback", methods=['POST'])
 def callback():
