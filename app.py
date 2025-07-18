@@ -3,7 +3,7 @@ from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
 from linebot.models import (
     MessageEvent, TextMessage, TextSendMessage,
-    SourceGroup, Mentionee
+    SourceGroup
 )
 import json, os, re
 from datetime import datetime
@@ -69,16 +69,13 @@ def handle_message(event):
     is_mod = roles.get("mods", {}).get(user_id, False)
     authorized = is_owner or is_mod
 
-    # Block banned users
     if roles.get("banned", {}).get(user_id):
         return
 
-    # Check for banned words
     if any(bad_word in text.lower() for bad_word in banned_words):
         line_bot_api.reply_message(event.reply_token, TextSendMessage(text="🚫 That word is banned here."))
         return
 
-    # Public Commands
     if text == "/help":
         help_text = (
             "**Admin Commands:**\n"
@@ -116,7 +113,6 @@ def handle_message(event):
     if not authorized:
         return
 
-    # Admin Commands
     if text.startswith("/addban"):
         parts = text.split(maxsplit=1)
         if len(parts) == 2:
